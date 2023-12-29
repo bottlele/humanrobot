@@ -82,7 +82,8 @@ def run(env, policy):
             start = time.time()
 
         with torch.no_grad():
-            action = policy.forward(torch.Tensor(observation), deterministic=True).detach().numpy()
+            # deter = torch.backends.cudnn.deterministic = True
+            action = policy.forward(torch.Tensor(observation), deterministic = True).detach().numpy()
 
         observation, _, done, info = env.step(action.copy())
         ep_rewards.append(info)

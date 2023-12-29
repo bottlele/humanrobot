@@ -31,7 +31,7 @@ class Linear_Actor(Actor):
         for p in self.parameters():
             p.data = torch.zeros(p.shape)
 
-    def forward(self, state):
+    def forward(self, state, deterministic=True):
         a = self.l1(state)
         a = self.l2(a)
         self.action = a

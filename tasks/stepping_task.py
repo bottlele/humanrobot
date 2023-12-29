@@ -56,6 +56,12 @@ class SteppingTask(object):
                 sequence.append(np.array([float(l) for l in line.split(',')]))
 
     def step_reward(self):
+
+        # if self.t1 >= len(self.sequence):  # check if t is out of range
+        #         self.t1 = len(self.sequence) - 1  # set t to the last index of self.sequence
+        # if self.t2 >= len(self.sequence):  # check if t is out of range
+        #         self.t2 = len(self.sequence) - 1  # set t to the last index of self.sequence
+
         target_pos = self.sequence[self.t1][0:3]
         foot_dist_to_target = min([np.linalg.norm(ft-target_pos) for ft in [self.l_foot_pos,
                                                                             self.r_foot_pos]])
@@ -145,9 +151,31 @@ class SteppingTask(object):
             y *= -1
             if i > c: # let height of first few steps equal to 0
                 z += step_height
+            # else:
+            #     z -= step_height  # decrease the z coordinate for each step
             step = np.array([x, y, z, 0])
             sequence.append(step)
         return sequence
+
+    # def update_goal_steps(self):
+    #     self._goal_steps_x[:] = np.zeros(2)
+    #     self._goal_steps_y[:] = np.zeros(2)
+    #     self._goal_steps_z[:] = np.zeros(2)
+    #     self._goal_steps_theta[:] = np.zeros(2)
+    #     root_pos = self._client.get_object_xpos_by_name(self._root_body_name, 'OBJ_BODY')
+    #     root_quat = self._client.get_object_xquat_by_name(self._root_body_name, 'OBJ_BODY')
+    #     for idx, t in enumerate([self.t1, self.t2]):
+    #         ref_frame = tf3.affines.compose(root_pos, tf3.quaternions.quat2mat(root_quat), np.ones(3))
+    #         abs_goal_pos = self.sequence[t][0:3]
+    #         abs_goal_rot = tf3.euler.euler2mat(0, 0, self.sequence[t][3])
+    #         absolute_target = tf3.affines.compose(abs_goal_pos, abs_goal_rot, np.ones(3))
+    #         relative_target = np.linalg.inv(ref_frame).dot(absolute_target)
+    #         if self.mode != WalkModes.STANDING:
+    #             self._goal_steps_x[idx] = relative_target[0, 3]
+    #             self._goal_steps_y[idx] = relative_target[1, 3]
+    #             self._goal_steps_z[idx] = relative_target[2, 3]
+    #             self._goal_steps_theta[idx] = tf3.euler.mat2euler(relative_target[:3, :3])[2]
+    #     return
 
     def update_goal_steps(self):
         self._goal_steps_x[:] = np.zeros(2)
@@ -157,6 +185,8 @@ class SteppingTask(object):
         root_pos = self._client.get_object_xpos_by_name(self._root_body_name, 'OBJ_BODY')
         root_quat = self._client.get_object_xquat_by_name(self._root_body_name, 'OBJ_BODY')
         for idx, t in enumerate([self.t1, self.t2]):
+            # if t >= len(self.sequence):  # check if t is out of range
+            #     t = len(self.sequence) - 1  # set t to the last index of self.sequence
             ref_frame = tf3.affines.compose(root_pos, tf3.quaternions.quat2mat(root_quat), np.ones(3))
             abs_goal_pos = self.sequence[t][0:3]
             abs_goal_rot = tf3.euler.euler2mat(0, 0, self.sequence[t][3])
@@ -174,14 +204,29 @@ class SteppingTask(object):
         self.t1 = self.t2
         self.t2+=1
         if self.t2==len(self.sequence):
-            self.t2 = len(self.sequence)-1
+            self.t2 = len(self.sequence) - 1
         return
+    
+    # def is_at_last_step(self):
+    #     # check if  the agent's current step is the last step
+    #     if self._current_step == self._total_steps:
+    #         return True
+    #     else:
+    #         return False
 
     def step(self):
         # increment phase
         self._phase+=1
         if self._phase>=self._period:
             self._phase=0
+        
+        # check if at the last step
+        if self._phase == self._total_duration:
+            # agent stays in place
+            self._goal_speed_ref = 0
+            # stop the agent
+            applied_action = np.zeros_like(applied_action)
+            print(1)
 
         self.l_foot_quat = self._client.get_object_xquat_by_name('lf_force', 'OBJ_SITE')
         self.r_foot_quat = self._client.get_object_xquat_by_name('rf_force', 'OBJ_SITE')
@@ -264,9 +309,11 @@ class SteppingTask(object):
 
         ## GENERATE STEP SEQUENCE
         # select a walking 'mode'
-        self.mode = np.random.choice(
-            [WalkModes.CURVED, WalkModes.STANDING, WalkModes.BACKWARD, WalkModes.LATERAL, WalkModes.FORWARD],
-            p=[0.15, 0.05, 0.2, 0.3, 0.3])
+        # self.mode = np.random.choice(
+        #     [WalkModes.CURVED, WalkModes.STANDING, WalkModes.BACKWARD, WalkModes.LATERAL, WalkModes.FORWARD],
+        #     p=[0.15, 0.05, 0.2, 0.3, 0.3])
+        
+        self.mode = WalkModes.FORWARD
 
         d = {'step_size':0.3, 'step_gap':0.15, 'step_height':0, 'num_steps':20, 'curved':False, 'lateral':False}
         # generate sequence according to mode
@@ -284,12 +331,15 @@ class SteppingTask(object):
             d['lateral'] = True
         elif self.mode == WalkModes.FORWARD:
             h = np.clip((self.iteration_count-3000)/8000, 0, 1)*0.1
-            d['step_height']=np.random.choice([-h, h])
+            # d['step_height']=np.random.choice([-h, h])
+            d['step_height']=h
+            d['step_height']=-h
         else:
             raise Exception("Invalid WalkModes")
         sequence = self.generate_step_sequence(**d)
         self.sequence = self.transform_sequence(sequence)
         self.update_target_steps()
+        # print(sequence)
 
         ## CREATE TERRAIN USING GEOMS
         nboxes = 20
@@ -306,3 +356,7 @@ class SteppingTask(object):
         self._client.model.geom('floor').pos[:] = np.array([0, 0, 0])
         if self.mode == WalkModes.FORWARD:
             self._client.model.geom('floor').pos[:] = np.array([0, 0, -100])
+            self._client.model.geom('floor').group = 3  
+            self._client.model.geom('floor').conaffinity = 0
+            self._client.model.geom('floor').contype = 0
+

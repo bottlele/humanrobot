@@ -24,7 +24,7 @@ class Net(nn.Module):
 
     self.env_name = None
 
-  def forward(self):
+  def forward(self, inputs, deterministic=False):
     raise NotImplementedError
 
   def normalize_state(self, state, update=True):

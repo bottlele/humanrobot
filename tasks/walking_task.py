@@ -57,10 +57,53 @@ class WalkingTask(object):
         return reward
 
     def step(self):
+        # if self._phase>self._period:
+        #     self._phase=0
+        self._phase+=1
         if self._phase>self._period:
             self._phase=0
-        self._phase+=1
-        return
+
+        # self.l_foot_quat = self._client.get_object_xquat_by_name('lf_force', 'OBJ_SITE')
+        # self.r_foot_quat = self._client.get_object_xquat_by_name('rf_force', 'OBJ_SITE')
+        # self.l_foot_pos = self._client.get_object_xpos_by_name('lf_force', 'OBJ_SITE')
+        # self.r_foot_pos = self._client.get_object_xpos_by_name('rf_force', 'OBJ_SITE')
+        # self.l_foot_vel = self._client.get_lfoot_body_vel()[0]
+        # self.r_foot_vel = self._client.get_rfoot_body_vel()[0]
+        # self.l_foot_frc = self._client.get_lfoot_grf()
+        # self.r_foot_frc = self._client.get_rfoot_grf()
+
+        # # check if target reached
+        # target_pos = self.sequence[self.t1][0:3]
+        # foot_dist_to_target = min([np.linalg.norm(ft-target_pos) for ft in [self.l_foot_pos,
+        #                                                                     self.r_foot_pos]])
+
+        # lfoot_in_target = (np.linalg.norm(self.l_foot_pos-target_pos) < self.target_radius)
+        # rfoot_in_target = (np.linalg.norm(self.r_foot_pos-target_pos) < self.target_radius)
+        # if lfoot_in_target or rfoot_in_target:
+        #     self.target_reached = True
+        #     self.target_reached_frames+=1
+        # else:
+        #     self.target_reached = False
+        #     self.target_reached_frames=0
+
+        # # update target steps if needed
+        # if self.target_reached and (self.target_reached_frames>=self.delay_frames):
+        #     self.update_target_steps()
+        #     self.target_reached = False
+        #     self.target_reached_frames = 0
+
+        # # update goal
+        # self.update_goal_steps()
+
+        # # check if it is the last step
+        # if self.t1 == len(self.sequence) - 1:
+        #     self._goal_speed_ref = 0
+
+        #  # update goal
+        # self.update_goal_steps()
+
+        # print(1)
+        # return
 
     def done(self):
         contact_flag = self._client.check_self_collisions()

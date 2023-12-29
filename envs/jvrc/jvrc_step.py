@@ -119,6 +119,23 @@ class JvrcStepEnv(mujoco_env.MujocoEnv):
         rewards = self.task.calc_reward(self.robot.prev_torque, self.robot.prev_action, applied_action)
         total_reward = sum([float(i) for i in rewards.values()])
 
+        # check if at the last step
+        if self.task._phase == self.task._total_duration:
+            # agent stays in place
+            self.task._goal_speed_ref = 0
+            # stop the agent
+            applied_action = np.zeros_like(applied_action)
+            print(1)
+        # print(2)
+            
+        # 获取agent的位置
+        # agent_pos = self.interface.get_robot_com()
+
+        # 检查agent是否到达了倒数第二个台阶
+        # if agent_pos[2] <= self.second_last_step_height:
+        #     # 设置agent的速度为0
+        #     self.interface.set_motor_torque(np.zeros(self.interface.nu()))
+
         # check if terminate
         done = self.task.done()
 

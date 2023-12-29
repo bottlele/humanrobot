@@ -118,6 +118,8 @@ class JvrcWalkEnv(mujoco_env.MujocoEnv):
         rewards = self.task.calc_reward(self.robot.prev_torque, self.robot.prev_action, applied_action)
         total_reward = sum([float(i) for i in rewards.values()])
 
+        # print(11)
+
         # check if terminate
         done = self.task.done()
 
